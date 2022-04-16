@@ -9,7 +9,7 @@ constexpr int ETH_ADDR_LENGTH = 6;
 constexpr int IP_ADDR_LENGTH = 4;
 
 // 目的MAC地址（广播地址）
-const std::string DST_MAC = "FF-FF-FF-FF-FF-FF";
+const std::string BROADCAST_MAC_ADDR = "FF-FF-FF-FF-FF-FF";
 
 // 以太网头部
 struct eth_header_t {
