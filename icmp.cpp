@@ -195,7 +195,6 @@ int ping(const char *ip)
     return 0;
 }
 
-int main(int argc, const char* argv[])
-{
+int main(int argc, const char* argv[]) {
     return ping("192.168.50.133");
 }
