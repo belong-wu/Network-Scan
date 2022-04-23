@@ -3,14 +3,6 @@
 #include <iostream>
 #include <string>
 
-// 以太网地址（等于MAC地址）长度
-constexpr int ETH_ADDR_LENGTH = 6;
-// IP地址长度
-constexpr int IP_ADDR_LENGTH = 4;
-
-// 目的MAC地址（广播地址）
-const std::string BROADCAST_MAC_ADDR = "FF-FF-FF-FF-FF-FF";
-
 // 以太网头部
 struct eth_header_t {
 	// 目标以太网地址

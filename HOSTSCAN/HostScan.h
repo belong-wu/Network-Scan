@@ -1,12 +1,13 @@
 #pragma once
-#include "ARPPacket.h"
+#include "Common.h"
 
 #include <iostream>
 #include <vector>
+#include <string>
 
 class HostScan
 {
-private:
+protected:
     /**
      * MAC address of the host
      */
@@ -14,24 +15,25 @@ private:
     /**
      * IP address of the host
      */
-    unsigned int ip_addr;
+    std::string ip_addr;
 
 public:
+    HostScan();
+    HostScan(std::string dev_name);
     /**
      *  scan by IP address
      */
-    virtual bool
-    Scan(std::string ip_addr) = 0;
+    virtual bool Scan(std::string ip_addr) = 0;
 
     /**
      *  scan by IP address and mask
      */
-    virtual std::vector<std::string> Scan(std::string ip_addr, unsigned short mask) = 0;
+    // virtual std::vector<std::string> Scan(std::string ip_addr, unsigned short mask) = 0;
 
     /**
      *  scan by IP address list
      */
-    virtual std::vector<std::string> Scan(std::vector<std::string> ip_addr_vec) = 0;
+    // virtual std::vector<std::string> Scan(std::vector<std::string> ip_addr_vec) = 0;
 
 private:
     bool GetMacAndIpAddr(std::string dev_name);

@@ -11,6 +11,18 @@ constexpr int MAX_DEVICE_NUM = 16;
 
 const std::unordered_set<std::string> dev_name_list_ = {"eth0", "ens33"};
 
+HostScan::HostScan() {
+    if (!GetMacAndIpAddr()) {
+        exit(EXIT_FAILURE);
+    }
+}
+
+HostScan::HostScan(std::string dev_name) {
+        if (!GetMacAndIpAddr(dev_name)) {
+        exit(EXIT_FAILURE);
+    }
+}
+
 bool HostScan::GetMacAndIpAddr(std::string dev_name)
 {
     int sock_fd;
@@ -22,14 +34,14 @@ bool HostScan::GetMacAndIpAddr(std::string dev_name)
 
     ifreq if_req;
     strcpy(if_req.ifr_name, dev_name.c_str());
-    if (ioctl(sock_fd, SIOCGIFHWADDR, &if_req) < 0)
+    if (ioctl(sock_fd, SIOCGIFADDR, &if_req) < 0)
     {
         perror("ioctl error");
         return false;
     }
-    ip_addr = ((struct sockaddr_in*)&(if_req.ifr_addr))->sin_addr.s_addr;
+    ip_addr = inet_ntoa(((struct sockaddr_in*)&(if_req.ifr_addr))->sin_addr);
 
-    if (ioctl(sock_fd, SIOCGIFADDR, &if_req) < 0)
+    if (ioctl(sock_fd, SIOCGIFHWADDR, &if_req) < 0)
     {
         perror("ioctl error");
         return false;
@@ -55,7 +67,7 @@ bool HostScan::GetMacAndIpAddr()
 
     if_conf.ifc_len = sizeof(if_req);
     if_conf.ifc_buf = (caddr_t)if_req;
-    if (ioctl(sock_fd, SIOCGIFNAME, (char *)&if_conf) < 0)
+    if (ioctl(sock_fd, SIOCGIFCONF, (char *)&if_conf) < 0)
     {
         perror("ioctl failed");
         return false;
