@@ -15,15 +15,14 @@
 #include <sys/epoll.h>
 #include <cstring>
 #include <unordered_set>
-#include <unordered_map>
 
-class ICMPHostScan : public HostScan
+class ICMPBroadCastHostScan
 {
 private:
     int epoll_fd;
 
 public:
-    ICMPHostScan() : HostScan::HostScan()
+    ICMPBroadCastHostScan()
     {
         if ((epoll_fd = epoll_create1(0)) <= 0)
         {
@@ -32,41 +31,12 @@ public:
         }
     }
 
-    ~ICMPHostScan()
+    ~ICMPBroadCastHostScan()
     {
-        close(epoll_fd);
+       close(epoll_fd);
     }
 
-    bool Scan(std::string ip_addr)
-    {
-        int sock_fd;
-        if ((sock_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
-        {
-            perror("socket error");
-            return false;
-        }
-        sockaddr_in addr;
-        addr.sin_addr.s_addr = inet_addr(ip_addr.c_str());
-        bind(sock_fd, (sockaddr *)&addr, sizeof(addr));
-
-        std::unordered_set<std::string> ip_addr_set;
-        ip_addr_set.insert(ip_addr);
-        if (!Prepare(sock_fd) || !SendIcmp(sock_fd, ip_addr_set))
-        {
-            close(sock_fd);
-            return false;
-        }
-        std::vector<std::string> survival_ip_vec = ReceiveIcmp(sock_fd, ip_addr_set);
-        if (survival_ip_vec.size() == 1)
-        {
-            close(sock_fd);
-            return true;
-        }
-        close(sock_fd);
-        return true;
-    }
-
-    std::vector<std::string> Scan(std::unordered_set<std::string> ip_addr_set)
+    std::vector<std::string> Scan()
     {
         int sock_fd;
         if ((sock_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
@@ -74,13 +44,20 @@ public:
             perror("socket error");
             return {};
         }
+        int opt = true;
+        if (setsockopt(sock_fd, SOL_SOCKET, SO_BROADCAST, (char *)&opt, sizeof(opt)) == -1)
+        {
+            perror("set sock broadcast error");
+            close(sock_fd);
+            return {};
+        }
 
-        if (!Prepare(sock_fd) || !SendIcmp(sock_fd, ip_addr_set))
+        if (!Prepare(sock_fd) || !SendIcmpBroadcast(sock_fd))
         {
             close(sock_fd);
             return {};
         }
-        std::vector<std::string> survival_ip_vec = ReceiveIcmp(sock_fd, ip_addr_set);
+        std::vector<std::string> survival_ip_vec = ReceiveIcmpBroadcast(sock_fd);
         close(sock_fd);
         return survival_ip_vec;
     }
@@ -99,12 +76,13 @@ private:
         return true;
     }
 
-    bool SendIcmp(int sock_fd, std::unordered_set<std::string> dst_ip_addr_set)
+    bool SendIcmpBroadcast(int sock_fd)
     {
         sockaddr_in addr;
         bzero(&addr, sizeof(addr));
         addr.sin_family = AF_INET;
         addr.sin_port = 0;
+        addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
         icmp_packet_t icmp_packet;
         bzero(&icmp_packet, sizeof(icmp_packet));
@@ -114,30 +92,23 @@ private:
         icmp_packet.checksum_ = htons(
             CalculateChecksum((unsigned char *)&icmp_packet, sizeof(icmp_packet)));
 
-        for (auto it = dst_ip_addr_set.begin(); it != dst_ip_addr_set.end(); it++)
+        for (int i = 0; i < MAX_SEND_NUM; i++)
         {
-            if (inet_aton((*it).c_str(), (struct in_addr *)&addr.sin_addr.s_addr) == 0)
+            if (sendto(sock_fd, &icmp_packet, sizeof(icmp_packet), 0,
+                       (sockaddr *)&addr, sizeof(addr)) <= 0)
             {
-                perror("inet aton error");
+                perror("send to error");
                 return false;
-            };
-
-            for (int i = 0; i < MAX_SEND_NUM; i++)
-            {
-                if (sendto(sock_fd, &icmp_packet, sizeof(icmp_packet), 0,
-                           (sockaddr *)&addr, sizeof(addr)) <= 0)
-                {
-                    perror("send to error");
-                    return false;
-                }
             }
         }
+
         return true;
     }
 
-    std::unordered_map<std::string, std::vector<int>> ReceiveIcmp(int sock_fd)
+    std::vector<std::string> ReceiveIcmpBroadcast(int sock_fd)
     {
-        std::unordered_map<std::string, std::vector<int>> survival_port;
+        std::vector<std::string> survival_ip;
+        std::unordered_set<std::string> survival_ip_set;
         epoll_event events[MAX_EPOLL_NUM];
         double start_time = GetTimeStamp();
         while (GetTimeStamp() < start_time + MAX_WAIT_TIME)
@@ -146,7 +117,7 @@ private:
             if (nfds == -1)
             {
                 perror("epoll wait error");
-                return survival_port;
+                return survival_ip;
             }
 
             for (int n = 0; n < nfds; ++n)
@@ -160,7 +131,7 @@ private:
                                  (struct sockaddr *)&peer_addr, &addr_len) <= 0)
                     {
                         perror("recvfrom error");
-                        return survival_port;
+                        return survival_ip;
                     }
 
                     // find icmp packet in ip packet
@@ -173,10 +144,10 @@ private:
                     }
 
                     std::string src_ip = inet_ntoa(peer_addr.sin_addr);
-                    if (ip_set.find(src_ip) != ip_set.end())
+                    if (survival_ip_set.find(src_ip) == survival_ip_set.end())
                     {
                         std::cout << src_ip << " is survival" << std::endl;
-                        ip_set.erase(src_ip);
+                        survival_ip_set.insert(src_ip);
                         survival_ip.push_back(src_ip);
                     }
                 }

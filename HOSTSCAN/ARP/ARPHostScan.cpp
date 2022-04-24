@@ -37,6 +37,11 @@ public:
         }
     }
 
+    ~ARPHostScan()
+    {
+       close(epoll_fd);
+    }
+
     bool Scan(std::string ip_addr)
     {
         int sock_fd;
@@ -128,7 +133,7 @@ private:
                 perror("inet aton error");
                 return false;
             };
-            
+
             for (int i = 0; i < MAX_SEND_NUM; i++)
             {
                 if (sendto(sock_fd, &arp_packet, sizeof(arp_packet), 0, (struct sockaddr *)&sl, sizeof(sl)) <= 0)

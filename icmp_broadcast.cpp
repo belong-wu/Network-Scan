@@ -169,9 +169,10 @@ int ping(const char *ip)
     // bool optval=true;
     // setsockopt(sock, SOL_SOCKET,SO_BROADCAST,(char*)&optval,sizeof(bool));
     int opt = 1;
-    int ret1 = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char *)&opt, sizeof(opt));
-    if (ret1 == -1)
-        printf("Set sock to broadcast format fail\n");
+    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char *)&opt, sizeof(opt)) == -1) {
+        perror("set sock broadcast error");
+        
+    }
     // set socket timeout option
     struct timeval tv;
     tv.tv_sec = 0;
