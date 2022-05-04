@@ -15,7 +15,6 @@
 #include <sys/epoll.h>
 #include <cstring>
 #include <unordered_set>
-#include <unordered_map>
 
 class ICMPHostScan : public HostScan
 {
@@ -30,11 +29,6 @@ public:
             perror("epoll_create1 failed");
             exit(EXIT_FAILURE);
         }
-    }
-
-    ~ICMPHostScan()
-    {
-        close(epoll_fd);
     }
 
     bool Scan(std::string ip_addr)
@@ -135,18 +129,18 @@ private:
         return true;
     }
 
-    std::unordered_map<std::string, std::vector<int>> ReceiveIcmp(int sock_fd)
+    std::vector<std::string> ReceiveIcmp(int sock_fd, std::unordered_set<std::string> ip_set)
     {
-        std::unordered_map<std::string, std::vector<int>> survival_port;
+        std::vector<std::string> survival_ip;
         epoll_event events[MAX_EPOLL_NUM];
         double start_time = GetTimeStamp();
-        while (GetTimeStamp() < start_time + MAX_WAIT_TIME)
+        while (GetTimeStamp() < start_time + MAX_WAIT_TIME && ip_set.size() != 0)
         {
             int nfds = epoll_wait(epoll_fd, events, MAX_EPOLL_NUM, MAX_WAIT_TIME * 1000);
             if (nfds == -1)
             {
                 perror("epoll wait error");
-                return survival_port;
+                return survival_ip;
             }
 
             for (int n = 0; n < nfds; ++n)
@@ -160,7 +154,7 @@ private:
                                  (struct sockaddr *)&peer_addr, &addr_len) <= 0)
                     {
                         perror("recvfrom error");
-                        return survival_port;
+                        return survival_ip;
                     }
 
                     // find icmp packet in ip packet
