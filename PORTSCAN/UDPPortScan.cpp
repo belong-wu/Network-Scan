@@ -13,13 +13,13 @@
 #include <unordered_map>
 #include <unistd.h>
 
-class UDPPortScan : public PortScan
+class UDPPortScan
 {
 private:
     int epoll_fd;
 
 public:
-    UDPPortScan() : PortScan::PortScan()
+    UDPPortScan()
     {
         if ((epoll_fd = epoll_create1(0)) <= 0)
         {
@@ -35,16 +35,25 @@ public:
 
     std::vector<ip_port_t> Scan(std::unordered_set<std::string> dst_ip_addr_set, std::unordered_set<int> port_set)
     {
-        int sock_fd;
-        if ((sock_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
+        int send_sock_fd;
+        if ((send_sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         {
-            perror("socket error");
+            perror("send socket error");
             return {};
         }
 
-        if (!Prepare(sock_fd) || !SendUdp(sock_fd, dst_ip_addr_set, port_set))
+        int recv_sock_fd;
+        if ((recv_sock_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
         {
-            close(sock_fd);
+            perror("receive socket error");
+            close(send_sock_fd);
+            return {};
+        }
+
+        if (!Prepare(recv_sock_fd) || !SendUdp(send_sock_fd, dst_ip_addr_set, port_set))
+        {
+            close(send_sock_fd);
+            close(recv_sock_fd);
             return {};
         }
 
@@ -57,8 +66,10 @@ public:
                 dst_ip_port_set.insert(ip_port);
             }
         }
-        std::vector<ip_port_t> survival_ip_vec = ReceiveIcmp(sock_fd, dst_ip_port_set);
-        close(sock_fd);
+
+        std::vector<ip_port_t> survival_ip_vec = ReceiveIcmp(recv_sock_fd, dst_ip_port_set);
+        close(send_sock_fd);
+        close(recv_sock_fd);
         return survival_ip_vec;
     }
 
@@ -91,8 +102,10 @@ private:
                 char buffer[MAX_BUF_SIZE];
                 bzero(buffer, sizeof(buffer));
                 if (sendto(sock_fd, buffer, 10, 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-                    perror("sendto error");
-                return false;
+                {
+                    perror("send to error");
+                    return false;
+                }
             }
         }
         return true;
@@ -128,18 +141,19 @@ private:
 
                     // find icmp packet in ip packet
                     struct icmp_packet_t *icmp = (struct icmp_packet_t *)(buffer + 20);
+                
                     // check type
                     if (icmp->type_ != 3)
                         continue;
 
                     std::string src_ip = inet_ntoa(peer_addr.sin_addr);
-                    int src_port = peer_addr.sin_port;
+                    int src_port = ntohs(*(unsigned short*) (buffer + 50));
                     ip_port_t result;
                     result.ip = src_ip;
                     result.port = src_port;
                     if (ip_port_set.find(result) != ip_port_set.end())
                     {
-                        std::cout << "the port of " << src_port << "of host " << src_ip << "is cloesd";
+                        std::cout << "the port of " << src_port << " of host " << src_ip << " is cloesd" << std::endl;
                         ip_port_set.erase(result);
                     }
                 }
@@ -152,7 +166,7 @@ private:
         }
         for (ip_port_t ip_port : ip_port_set)
         {
-            std::cout << "the port of " << ip_port.port << "of host " << ip_port.ip << "is open";
+            std::cout << "the port of " << ip_port.port << " of host " << ip_port.ip << " is open" << std::endl;
             survival_ip_port.push_back(ip_port);
         }
         return survival_ip_port;

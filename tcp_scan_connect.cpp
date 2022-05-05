@@ -46,5 +46,4 @@ int main()
     unsigned short int port = 8081;
     int sock_fd = InitSocket();
     ConnectPort(sock_fd, port, host_name);
-    
 }
