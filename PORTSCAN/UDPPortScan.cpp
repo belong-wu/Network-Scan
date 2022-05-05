@@ -13,13 +13,13 @@
 #include <unordered_map>
 #include <unistd.h>
 
-class UDPPortScan
+class UDPPortScan : public PortScan
 {
 private:
     int epoll_fd;
 
 public:
-    UDPPortScan()
+    UDPPortScan() : PortScan()
     {
         if ((epoll_fd = epoll_create1(0)) <= 0)
         {

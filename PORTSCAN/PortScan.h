@@ -33,6 +33,6 @@ public:
     /**
      *  scan by IP address and port
      */
-    virtual bool Scan(std::vector<std::string> ip_addr, int port);
+    virtual std::vector<ip_port_t> Scan(std::unordered_set<std::string> dst_ip_addr_set, std::unordered_set<int> dst_port_set);
 
 };
