@@ -9,27 +9,8 @@
 #include <unistd.h>
 #include <unordered_map>
 
-struct ip_port_t
-{
-    std::string ip;
-    int port;
-};
+#include "../Common.h"
 
-struct ip_port_hash
-{
-    size_t operator()(const ip_port_t &r1) const
-    {
-        return std::hash<std::string>()(r1.ip) ^ std::hash<int>()(r1.port);
-    }
-};
-
-struct ip_port_equal
-{
-    bool operator()(const ip_port_t &rc1, const ip_port_t &rc2) const noexcept
-    {
-        return rc1.ip == rc2.ip && rc1.port == rc2.port;
-    }
-};
 
 class FTPServiceScan
 {
@@ -72,22 +53,23 @@ private:
                 // receive another packet
                 unsigned int addr_len = sizeof(peer_addr);
                 int bytes_num = recvfrom(sock_fd, buffer, sizeof(buffer), 0,
-                                      (struct sockaddr *)&peer_addr, &addr_len);
-                if (bytes_num <= 0) {
+                                         (struct sockaddr *)&peer_addr, &addr_len);
+                if (bytes_num <= 0)
+                {
                     perror("recv from error");
                     return result;
                 }
 
                 char banner[50];
-                bzero(banner,sizeof(banner));
+                bzero(banner, sizeof(banner));
                 memcpy(banner, buffer + 5, 12);
-                std::cout << banner << std::endl;
-                // else
-                // {
-                //     std::cout << "the port of " << port << " of host " << ip_addr << " is open" << std::endl;
-                //     ip_port_t survival = {ip_addr, port};
-                //     result.push_back(survival);
-                // }
+                std::string src_ip = inet_ntoa(peer_addr.sin_addr);
+                int src_port = ntohs(*(unsigned short *)(buffer + 50));
+                ip_port_t ip_port;
+                ip_port.ip = src_ip;
+                ip_port.port = src_port;
+                result[ip_port] = banner;
+                std::cout << "the service name with port of " << port << " and host " << ip_addr << " is " << banner << std::endl;
             }
         }
         return result;

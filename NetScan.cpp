@@ -7,18 +7,21 @@
 #include "./PORTSCAN/TCPPortScan.cpp"
 #include "./PORTSCAN/UDPPortScan.cpp"
 #include "./OSSCAN/TTLOsScan.cpp"
+#include "./SERVICESCAN/FTPServiceScan.cpp"
 
-int main() {
+int main()
+{
     ARPHostScan arp_scan;
     ICMPHostScan icmp_scan;
     ICMPBroadCastHostScan icmp_broadcast_scan;
     TCPPortScan tcp_scan;
     UDPPortScan udp_scan;
     TTLOsScan tll_scan;
+    FTPServiceScan ftp_scan;
 
-    while(true) {
-        std::string instruction;
-        std::cin >> instruction;
-        StringSplit(instruction, ' ');
-    }
+    // while(true) {
+    //     std::string instruction;
+    //     std::cin >> instruction;
+    //     StringSplit(instruction, ' ');
+    // }
 }
