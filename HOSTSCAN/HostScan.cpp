@@ -1,3 +1,4 @@
+#pragma once
 #include "HostScan.h"
 #include <string.h>
 #include <sys/ioctl.h>

@@ -1,6 +1,7 @@
+#pragma once
 #include "../HostScan.cpp"
-#include "ICMPPacket.h"
-#include "../CommonUtil.cpp"
+#include "../../ICMPPacket.h"
+#include "../../CommonUtil.cpp"
 
 #include <iostream>
 #include <net/ethernet.h>

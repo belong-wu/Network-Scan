@@ -1,4 +1,4 @@
-#include "PortScan.h"
+#include "PortScan.cpp"
 
 #include <string.h>
 #include <sys/ioctl.h>
@@ -20,6 +20,7 @@ public:
             perror("socket error");
             return {};
         }
+        return ConnectPort(sock_fd, dst_ip_addr_set, dst_port_set);
     }
 
 private:

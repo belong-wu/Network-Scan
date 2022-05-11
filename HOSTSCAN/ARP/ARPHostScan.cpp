@@ -1,6 +1,6 @@
-#include "HostScan.cpp"
+#include "../HostScan.cpp"
 #include "ARPPacket.h"
-#include "CommonUtil.cpp"
+#include "../../CommonUtil.cpp"
 
 #include <iostream>
 #include <net/ethernet.h>
@@ -16,10 +16,6 @@
 #include <cstring>
 #include <unordered_set>
 
-constexpr int MAX_SEND_NUM = 3;
-constexpr int MAX_EPOLL_NUM = 200;
-constexpr int MAX_WAIT_TIME = 10;
-constexpr int MAX_BUF_SIZE = 65535;
 constexpr int STR_BUF_SIZE = 20;
 
 class ARPHostScan : public HostScan
@@ -39,7 +35,7 @@ public:
 
     ~ARPHostScan()
     {
-       close(epoll_fd);
+        close(epoll_fd);
     }
 
     bool Scan(std::string ip_addr)

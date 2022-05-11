@@ -19,13 +19,13 @@
 #include <unordered_map>
 #include <vector>
 
-class TTLScan : public OSScan
+class TTLOsScan
 {
 private:
     int epoll_fd;
 
 public:
-    TTLScan()
+    TTLOsScan()
     {
         if ((epoll_fd = epoll_create1(0)) <= 0)
         {
@@ -35,7 +35,7 @@ public:
     }
 
 public:
-    int Scan(std::unordered_set<std::string> dst_ip_addr_set)
+    std::unordered_map<std::string, int> Scan(std::unordered_set<std::string> dst_ip_addr_set)
     {
         int sock_fd;
         if ((sock_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
@@ -49,9 +49,9 @@ public:
             close(sock_fd);
             return {};
         }
-        std::vector<std::string> survival_ip_vec = ReceiveIcmp(sock_fd, dst_ip_addr_set);
+        std::unordered_map<std::string, int> ip_os_map = ReceiveIcmp(sock_fd, dst_ip_addr_set);
         close(sock_fd);
-        return survival_ip_vec;
+        return ip_os_map;
     }
 
 private:
@@ -144,9 +144,23 @@ private:
                     std::string src_ip = inet_ntoa(peer_addr.sin_addr);
                     if (ip_set.find(src_ip) != ip_set.end())
                     {
-                        std::cout << src_ip << " is survival" << std::endl;
+                        unsigned char ttl = *(buffer + 8);
+                        int os_type;
+                        switch (ttl)
+                        {
+                        case 128:
+                            os_type = Windows;
+                            std::cout << "ip : " + src_ip + " is Windows" << std::endl;
+                            break;
+                        case 64:
+                            os_type = Linux;
+                            std::cout << "ip : " + src_ip + " is Linux" << std::endl;
+                            break;
+                        default:
+                            continue;
+                        }
                         ip_set.erase(src_ip);
-                        ip_os_map.push_back(src_ip);
+                        ip_os_map[src_ip] = os_type;
                     }
                 }
                 else
@@ -156,5 +170,6 @@ private:
                 }
             }
         }
+        return ip_os_map;
     }
 };

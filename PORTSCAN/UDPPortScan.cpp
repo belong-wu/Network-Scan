@@ -1,4 +1,4 @@
-#include "PortScan.h"
+#include "PortScan.cpp"
 #include "../Common.h"
 #include "../CommonUtil.cpp"
 #include "../ICMPPacket.h"
@@ -97,7 +97,7 @@ private:
         {
             server_addr.sin_addr.s_addr = inet_addr((*ip_it).c_str());
             for (auto port_it = port_set.begin(); port_it != port_set.end(); port_it++)
-            {
+            {  
                 server_addr.sin_port = htons(*port_it);
                 char buffer[MAX_BUF_SIZE];
                 bzero(buffer, sizeof(buffer));

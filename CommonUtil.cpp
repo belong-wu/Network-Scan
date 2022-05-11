@@ -1,4 +1,7 @@
+#pragma once
 #include <iostream>
+#include <string>
+#include <sstream>
 #include <sys/time.h>
 
 long int GetTimeStamp()
@@ -36,4 +39,15 @@ unsigned short int CalculateChecksum(unsigned char* buffer, int bytes)
     checksum = ~checksum;
 
     return checksum & 0xffff;
+}
+
+
+void StringSplit(std::string str, const char split)
+{
+	std::istringstream iss(str);	// 输入流
+	std::string token;			// 接收缓冲区
+	while (getline(iss, token, split))	// 以split为分隔符
+	{
+		std::cout << token << std::endl; // 输出
+	}
 }
